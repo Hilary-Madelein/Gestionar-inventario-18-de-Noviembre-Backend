@@ -7,64 +7,63 @@ var personRole = models.personRole;
 var account = models.account;
 const bcrypt = require('bcrypt');
 const saltRounds = 8;
-let jwt = require('jsonwebtoken');
 
 class PersonController {
 
-    async listar(req, res) {
+    async list(req, res) {
         try {
-            var listar = await person.findAll({
-                attributes: ['apellidos', 'nombres', 'external_id', 'cargo', 'institucion', 'fecha_nacimiento', 'estado'],
+            var get = await person.findAll({
+                attributes: ['lastName', 'firstName', 'externalId', 'status', 'photo', 'identificationType', 'identification', 'birthDate'],
                 include: [
                     {
-                        model: models.persona_rol,
-                        as: 'persona_rol',
+                        model: models.personRole,
+                        as: 'personRole',
                         attributes: [
-                            'external_id'
+                            'externalId'
                         ],
                         include: {
-                            model: models.rol,
-                            as: 'rol',
+                            model: models.role,
+                            as: 'role',
                             attributes: [
-                                'nombre',
-                                'external_id'
+                                'name',
+                                'externalId'
                             ],
                         }
                     },
                 ],
             });
-            res.json({ msg: 'OK!', code: 200, info: listar });
+            res.json({ msg: 'OK!', code: 200, info: get });
         } catch (error) {
             res.status(500)
             res.json({ msg: 'Error al listar personas', code: 500, info: error });
         }
     }
 
-    async asignarRol(req, res) {
+    async assignRole(req, res) {
         try {
-            const extPersona = req.params.external_persona;
-            const extRol = req.params.external_rol;
-            var idPersona = await persona.findOne({
-                where: { external_id: extPersona },
-                attributes: ['nombres', 'apellidos', 'id']
+            const externalPerson = req.params.externalId_person;
+            const externalRole = req.params.externalId_role;
+            var idPerson = await person.findOne({
+                where: { externalId: externalPerson },
+                attributes: ['firstName', 'lastName', 'id']
             });
-            var idRol = await persona.findOne({
-                where: { external_id: extRol },
-                attributes: ['nombre', 'id']
+            var idRole = await person.findOne({
+                where: { external_id: externalRole },
+                attributes: ['name', 'id']
             });
-            if (idPersona === null || idRol === null) {
+            if (idPerson === null || idRole === null) {
                 res.status(400);
-                res.json({ msg: "Datos no encontrados", code: 400 });
+                res.json({ msg: "DATOS NO ENCONTRADOS", code: 400 });
             } else {
                 var data = {
-                    "id_persona": idPersona.id,
-                    "id_rol": idRol.id
+                    "id_person": idPerson.id,
+                    "id_role": idRole.id
                 }
                 let transaction = await models.sequelize.transaction();
-                await persona_rol.create(data, transaction);
+                await personRole.create(data, transaction);
                 await transaction.commit();
                 res.json({
-                    msg: "SE HAN REGISTRADO EL ROL DE LA PERSONA",
+                    msg: "SE HA REGISTRADO EL ROL DE LA PERSONA",
                     code: 200
                 });
             }
@@ -78,31 +77,31 @@ class PersonController {
         }
     }
 
-    async obtener(req, res) {
+    async getPerson(req, res) {
         try {
             const external = req.params.external;
-            var listar = await persona.findOne({
-                where: { external_id: external },
+            var get = await person.findOne({
+                where: { externalId: external },
                 include: {
-                    model: cuenta,
-                    as: 'cuenta',
-                    attributes: ['correo']
+                    model: account,
+                    as: 'account',
+                    attributes: ['email']
                 },
-                attributes: ['apellidos', 'nombres', 'external_id', 'cargo', 'institucion', 'fecha_nacimiento'],
+                attributes: ['lastName', 'firstName', 'externalId', 'status', 'photo', 'identificationType', 'identification', 'birthDate'],
             });
-            if (listar === null) {
+            if (get === null) {
 
-                listar = {};
+                get = {};
             }
             res.status(200);
-            res.json({ msg: 'OK!', code: 200, info: listar });
+            res.json({ msg: 'OK!', code: 200, info: get });
         } catch (error) {
             res.status(500);
             res.json({ msg: 'Error al obtener persona', code: 500, info: error });
         }
     }
 
-    async save(req, res) {
+    async create(req, res) {
         try {
             let errors = validationResult(req);
             if (errors.isEmpty()) {
@@ -171,11 +170,11 @@ class PersonController {
         }
     }
 
-    async alter(req, res) {
+    async update(req, res) {
         try {
             const personAux = await person.findOne({
                 where: {
-                    external_id: req.body.external_id
+                    externalId: req.body.externalId
                 }
             });
 
@@ -212,6 +211,7 @@ class PersonController {
             personAux.identificationType = req.body.identificationType;
             personAux.firstName = req.body.firstName;
             personAux.lastName = req.body.lastName;
+            personAux.status = req.body.status;
             accountAux.status = req.body.status;
             personAux.photo = lastPhoto;
             personAux.external_id = uuid.v4();
@@ -220,20 +220,20 @@ class PersonController {
             await accountAux.save();
             if (!result) {
                 return res.status(400).json({
-                    msg: "NO SE HAN MODIFICADO LOS DATOS",
+                    msg: "NO SE HAN ACTUALIZADO LOS DATOS, INTENTE NUEVAMENTE",
                     code: 400
                 });
             }
 
             return res.status(200).json({
-                msg: "SE HAN MOFIDICADO SUS DATOS CON ÉXITO",
+                msg: "SE HAN ACTUALIZADO SUS DATOS CON ÉXITO",
                 code: 200
             });
 
         } catch (error) {
             console.log(error)
             return res.status(400).json({
-                msg: "Error en el servidor",
+                msg: "Error en el servicio de guardar persona",
                 code: 400
             });
         }
