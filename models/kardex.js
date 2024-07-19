@@ -11,8 +11,8 @@ module.exports = (sequelize, DataTypes) => {
 
     kardex.associate = function (models) {
         kardex.belongsTo(models.warehouse, {foreignKey: 'warehouseId'});
-        kardex.belongsTo(models.product, {foreignKey: 'productId'});
         kardex.hasMany(models.itemKardex, { foreignKey: 'kardexId', as: 'itemKardex' });
+        kardex.belongsTo(models.product, {foreignKey: 'productId'});
     }
 
     return kardex;    

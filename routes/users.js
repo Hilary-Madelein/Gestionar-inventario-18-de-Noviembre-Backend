@@ -10,6 +10,8 @@ const ProductController = require('../controls/ProductController');
 var productController = new ProductController();
 const WarehouseController = require('../controls/WarehouseController');
 var warehouseController = new WarehouseController();
+const KardexController = require('../controls/KardexController');
+var kardexController = new KardexController();
 
 /* GET users listing. */
 router.get('/', function(req, res, next) {
@@ -191,6 +193,12 @@ router.get('/obtener/producto/:external',  productController.getProduct);
 
 /** BODEGA */
 router.post('/registrar/bodega', warehouseController.save);
+router.post('/actualizar/bodega',  warehouseController.update);
+router.get('/listar/bodega', warehouseController.list);
+router.get('/obtener/bodega/:external', warehouseController.getWarehouse);
+
+/** KARDEX */
+router.post('/registrar/kardex', kardexController.save);
 router.post('/actualizar/bodega',  warehouseController.update);
 router.get('/listar/bodega', warehouseController.list);
 router.get('/obtener/bodega/:external', warehouseController.getWarehouse);

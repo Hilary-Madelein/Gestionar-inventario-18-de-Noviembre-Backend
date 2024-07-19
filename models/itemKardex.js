@@ -14,6 +14,7 @@ module.exports = (sequelize) => {
 
     itemKardex.associate = function (models) {
         itemKardex.belongsTo(models.kardex, { foreignKey: 'kardexId' });  
+        itemKardex.belongsTo(models.batch, { foreignKey: 'batchId' });
     }
 
     return itemKardex;

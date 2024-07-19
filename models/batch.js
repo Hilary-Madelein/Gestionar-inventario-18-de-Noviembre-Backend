@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
 
     batch.associate = function (models) {
         batch.belongsTo(models.product, { foreignKey: 'productId' });
+        batch.hasMany(models.itemKardex, { foreignKey: 'batchId', as: 'itemKardex' });
     }
 
     return batch;
