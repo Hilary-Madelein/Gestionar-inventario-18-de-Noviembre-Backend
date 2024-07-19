@@ -61,42 +61,22 @@ class BatchController {
         }
     }
 
-    async save(req, res) {
+    async save(data, transaction) {
         try {
-            let errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                return res.status(400).json({ msg: "DATOS NO ENCONTRADOS", code: 400 });
-            }
-    
-            var data = {
-                code: req.body.code,
-                expirationDate: req.body.expirationDate, 
-                expiryDate: req.body.expiryDate,
+            const batchData = {
+                code: data.code,
+                expirationDate: data.expirationDate,
+                expiryDate: data.expiryDate
             };
     
-            let transaction = await models.sequelize.transaction();
-            try {
-                await batch.create(data, { transaction });
-                await transaction.commit();
-                res.json({
-                    msg: "SE HA REGISTRADO EL LOTE CON ÉXITO",
-                    code: 200
-                });
-            } catch (error) {
-                if (transaction) await transaction.rollback();
-                if (error.error && error.error[0].message) {
-                    res.json({ msg: error.error[0].message, code: 201 });
-                } else {
-                    res.json({ msg: error.message, code: 201 });
-                }
-            }
+            const batch = await models.batch.create(batchData, { transaction });
+            return { success: true, batch };
         } catch (error) {
-            res.status(400).json({
-                msg: "Se produjo un error al registrar el lote: " + error,
-                code: 400
-            });
+            console.error('Error al crear lote:', error);
+            return { success: false, message: error.message };
         }
     }
+    
 
     async update(req, res) {
         try {

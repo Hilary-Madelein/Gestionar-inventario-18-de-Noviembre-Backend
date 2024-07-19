@@ -16,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
     }, { freezeTableName: true });
 
     product.associate = function (models) {
-        product.hasMany(models.batch, { foreignKey: 'productId', as: 'batch' });
+        product.hasOne(models.kardex, { foreignKey: 'productId', as: 'kardex' });
     }
 
     return product;    
