@@ -11,7 +11,8 @@ module.exports = (sequelize, DataTypes) => {
     }, { freezeTableName: true });
 
     location.associate = function (models) {
-        location.hasOne(models.warehouse, { foreignKey: 'locationId', as: 'warehouse' });
+        location.belongsTo(models.warehouse, { foreignKey: 'warehouseId', as: 'warehouse'});
+        
     }
 
     return location;    

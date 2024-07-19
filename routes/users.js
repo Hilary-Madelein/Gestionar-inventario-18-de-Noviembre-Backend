@@ -8,6 +8,8 @@ const uuid = require('uuid');
 const { body, validationResult,isDate } = require('express-validator');
 const ProductController = require('../controls/ProductController');
 var productController = new ProductController();
+const WarehouseController = require('../controls/WarehouseController');
+var warehouseController = new WarehouseController();
 
 /* GET users listing. */
 router.get('/', function(req, res, next) {
@@ -152,7 +154,7 @@ router.post('/registrar/producto', uploadFotoProducto.single('photo'), (req, res
           });
       }
       // Asegúrate de manejar otros tipos de errores de Multer aquí, si necesario
-      return res.status(500).json({
+      return res.status(400).json({
           msg: "Error de Multer: " + error.message,
           code: 400
       });
@@ -175,7 +177,7 @@ router.post('/actualizar/producto', uploadFotoProducto.single('photo'), (req, re
           });
       }
       // Asegúrate de manejar otros tipos de errores de Multer aquí, si necesario
-      return res.status(500).json({
+      return res.status(400).json({
           msg: "Error de Multer: " + error.message,
           code: 400
       });
@@ -186,4 +188,10 @@ router.post('/actualizar/producto', uploadFotoProducto.single('photo'), (req, re
 
 router.get('/listar/producto', productController.list);
 router.get('/obtener/producto/:external',  productController.getProduct);
+
+/** BODEGA */
+router.post('/registrar/bodega', warehouseController.save);
+router.post('/actualizar/bodega',  warehouseController.update);
+router.get('/listar/bodega', warehouseController.list);
+router.get('/obtener/bodega/:external', warehouseController.getWarehouse);
 

@@ -119,7 +119,7 @@ class PersonController {
                             identification: req.body.identification,
                             identificationType: req.body.identificationType,
                             birthDate: req.body.birthDate,
-                            status: false,
+                            status: true,
                             foto: req.file.filename,
                             account: {
                                 email: req.body.email,

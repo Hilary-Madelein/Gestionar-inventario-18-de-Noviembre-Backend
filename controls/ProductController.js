@@ -2,7 +2,6 @@
 const { body, validationResult, check } = require('express-validator');
 const models = require('../models/');
 const product = models.product;
-const saltRounds = 8;
 const fs = require('fs');
 const path = require('path');
 const uuid = require('uuid');
@@ -16,8 +15,8 @@ class ProductController {
             });
             res.json({ msg: 'OK!', code: 200, info: get });
         } catch (error) {
-            res.status(500)
-            res.json({ msg: 'Error al listar productos' +error, code: 500, info: error });
+            res.status(400)
+            res.json({ msg: 'Error al listar productos' + error, code: 400, info: error });
         }
     }
 
@@ -35,8 +34,8 @@ class ProductController {
             res.status(200);
             res.json({ msg: 'OK!', code: 200, info: get });
         } catch (error) {
-            res.status(500);
-            res.json({ msg: 'Error al obtener producto', code: 500, info: error });
+            res.status(400);
+            res.json({ msg: 'Error al obtener producto', code: 400, info: error });
         }
     }
 
@@ -46,15 +45,15 @@ class ProductController {
             if (!errors.isEmpty()) {
                 return res.status(400).json({ msg: "DATOS NO ENCONTRADOS", code: 400 });
             }
-    
+
             var data = {
                 name: req.body.name,
-                photo: req.file.filename, 
+                photo: req.file.filename,
                 category: req.body.category,
                 externalId: req.body.externalId,
                 status: req.body.status,
             };
-    
+
             let transaction = await models.sequelize.transaction();
             try {
                 await product.create(data, { transaction });
@@ -65,13 +64,20 @@ class ProductController {
                 });
             } catch (error) {
                 await transaction.rollback();
+                // Y esto tambien
+                if (transaction) await transaction.rollback();
+                if (error.error && error.error[0].message) {
+                    res.json({ msg: error.error[0].message, code: 201 });
+                } else {
+                    res.json({ msg: error.message, code: 201 });
+                }
                 fs.unlinkSync(path.join(__dirname, '../public/images/products', req.file.filename)); // Borrar el archivo si falla la transacción
-                res.status(500).json({ msg: "Error al crear el producto: " + error.message, code: 500 });
+                res.status(400).json({ msg: "Error al crear el producto: " + error.message, code: 500 });
             }
         } catch (error) {
-            res.status(500).json({
+            res.status(400).json({
                 msg: "Se produjo un error al registrar el producto: " + error,
-                code: 500
+                code: 400
             });
         }
     }
@@ -94,7 +100,7 @@ class ProductController {
             let lastPhoto = productAux.foto;
             let newPhotoPath = '';
 
-            if (req.file) {                
+            if (req.file) {
                 // Actualizar el nombre de la imagen con el nombre de la nueva imagen cargada
                 newPhotoPath = req.file.filename;
             }
@@ -125,7 +131,9 @@ class ProductController {
             });
 
         } catch (error) {
-            if (req.file) { 
+            if (req.file) {
+                // ESTO AGREGASTE POR SI NO VALE
+                await transaction.rollback();
                 const newPhotoPath = path.join(__dirname, '../public/images/products/', req.file.filename);
                 fs.unlinkSync(newPhotoPath);
             }
