@@ -1,28 +1,17 @@
 'use strict';
 const { body, validationResult, check } = require('express-validator');
 const models = require('../models');
-const bacth = models.bacth;
+const batch = models.batch;
 const product = models.product;
 const uuid = require('uuid');
-const batch = require('../models/batch');
 
 class BatchController {
 
     async list(req, res) {
         try {
-            var get = await bacth.findAll({
-                attributes: ['code', 'expirationDate', 'expiryDate', 'externalId', 'status'],
-                include: [
-                    {
-                        model: product,
-                        as: 'product',
-                        attributes: [
-                            'name', 
-                            'category',
-                            'status'
-                        ],
-                    },
-                ],
+            var get = await batch.findAll({
+                where: { status: 1 },
+                attributes: ['id', 'code', 'expirationDate', 'expiryDate', 'externalId', 'status'],
             });
             res.json({ msg: 'OK!', code: 200, info: get });
         } catch (error) {
@@ -34,7 +23,7 @@ class BatchController {
     async getBatch(req, res) {
         try {
             const external = req.body.external;
-            var get = await bacth.findOne({
+            var get = await batch.findOne({
                 where: { externalId: external },
                 attributes: ['code', 'expirationDate', 'expiryDate', 'externalId', 'status'],
                 include: [

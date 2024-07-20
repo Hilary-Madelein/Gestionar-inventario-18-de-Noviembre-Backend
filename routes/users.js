@@ -14,6 +14,8 @@ const KardexController = require('../controls/KardexController');
 var kardexController = new KardexController();
 const ItemKardexController = require('../controls/ItemKardexController');
 var itemKardexController = new ItemKardexController();
+const BatchController = require('../controls/BatchController');
+var batchController = new BatchController();
 
 /* GET users listing. */
 router.get('/', function(req, res, next) {
@@ -208,7 +210,10 @@ router.get('/obtener/bodega/:external', warehouseController.getWarehouse);
 /** ITEM KARDEX */
 router.post('/registrarEntradaExterna/itemKardex', itemKardexController.createItemKardexExternalInput);
 router.post('/registrarSalidaExterna/itemKardex', itemKardexController.createItemKardexExternalOutput);
-router.post('/actualizar/bodega',  warehouseController.update);
-router.get('/listar/bodega', warehouseController.list);
-router.get('/obtener/bodega/:external', warehouseController.getWarehouse);
+router.post('/obtener/entradas/items', itemKardexController.getInputs);
+router.post('/obtener/salidas/items', itemKardexController.getOutputs);
+router.post('/obtener/cantidad', itemKardexController.getQualityInputs);
+router.get('/obtener/existencia', itemKardexController.getExistence);
 
+/** LOTE */
+router.get('/listar/lote', batchController.list);
