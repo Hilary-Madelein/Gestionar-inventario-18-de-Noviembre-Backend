@@ -134,10 +134,12 @@ class itemKardexController {
                 if (kardexAux) {
                     const transaction = await models.sequelize.transaction();
                     try {
+                        console.log("ssssss", req.body);
                         const batchResult = await batchController.save({
                             code: req.body.code,
                             expirationDate: req.body.expirationDate,
-                            expiryDate: req.body.expiryDate
+                            expiryDate: req.body.expiryDate,
+                            quantity: req.body.quantity
                         }, transaction);
 
                         if (!batchResult.success) {
@@ -203,33 +205,40 @@ class itemKardexController {
             const kardexId = req.body.external_kardex;
             if (kardexId) {
                 const kardexAux = await models.kardex.findOne({ where: { externalId: kardexId } });
-
+    
                 if (req.body.quantity <= 0) {
                     return res.status(400).json({
-                        msg: "LA CANTIDAD DEBE SER UN VALOR MAYOR A CERO",
+                        msg: "LA CANTIDAD DEBE SER MAYOR QUE CERO",
                         code: 400
                     });
                 }
-
+    
                 if (kardexAux) {
                     const transaction = await models.sequelize.transaction();
                     try {
+                        const batchData = await models.batch.findByPk(req.body.batchId, { transaction });
+    
+                        if (!batchData) {
+                            await transaction.rollback();
+                            return res.status(404).json({ msg: "LOTE NO ENCONTRADO", code: 404 });
+                        }
+    
+                        if (batchData.availableQuantity < req.body.quantity) {
+                            await transaction.rollback();
+                            return res.status(400).json({
+                                msg: "STOCK INSUFICIENTE DISPONIBLE PARA EL LOTE",
+                                code: 400
+                            });
+                        }
+    
                         const lastItemKardex = await models.itemKardex.findOne({
                             where: { kardexId: kardexAux.id },
                             order: [['createdAt', 'DESC']],
                             transaction
                         });
-
-                        if (lastItemKardex && (lastItemKardex.existence - req.body.quantity) < 0) {
-                            await transaction.rollback();
-                            return res.status(400).json({
-                                msg: "NO HAY SUFICIENTE EXISTENCIA DISPONIBLE PARA LA SALIDA",
-                                code: 400
-                            });
-                        }
-
+    
                         const newExistence = lastItemKardex ? lastItemKardex.existence - req.body.quantity : -req.body.quantity;
-
+    
                         const newItemKardexData = {
                             kardexId: kardexAux.id,
                             date: new Date(),
@@ -241,26 +250,26 @@ class itemKardexController {
                             destinationWarehouseId: "SALIDA ESTUDIANTE", // Fijo para salidas externas
                             batchId: req.body.batchId
                         };
-
-                        // Actualizar el estado del lote
-                        const batch = await models.batch.findByPk(req.body.batchId, { transaction });
-                        if (batch) {
-                            batch.status = 0;
-                            await batch.save({ transaction });
-                        }
-
+    
                         await models.itemKardex.create(newItemKardexData, { transaction });
-
+    
+                        batchData.availableQuantity -= req.body.quantity;
+                        if (batchData.availableQuantity <= 0) {
+                            batchData.status = 0; // Cambiar el estado del lote a inactivo si availableQuantity es 0 o menos
+                        }
+    
+                        await batchData.save({ transaction });
+    
                         await transaction.commit();
                         return res.json({
                             msg: "TRANSACCIÓN REALIZADA CON ÉXITO",
                             code: 200
                         });
-
+    
                     } catch (error) {
                         await transaction.rollback();
                         return res.status(500).json({
-                            msg: "Error en la transacción" + error,
+                            msg: "ERROR EN LA TRANSACCIÓN",
                             code: 500,
                             error: error.message
                         });
@@ -279,6 +288,7 @@ class itemKardexController {
             });
         }
     }
+    
 
 }
 

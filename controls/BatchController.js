@@ -9,44 +9,36 @@ class BatchController {
 
     async list(req, res) {
         try {
-            var get = await batch.findAll({
+            const get = await batch.findAll({
                 where: { status: 1 },
-                attributes: ['id', 'code', 'expirationDate', 'expiryDate', 'externalId', 'status'],
+                attributes: ['id', 'code', 'expirationDate', 'expiryDate', 'externalId', 'status', 'availableQuantity'],
             });
             res.json({ msg: 'OK!', code: 200, info: get });
         } catch (error) {
-            res.status(400)
-            res.json({ msg: 'Error al listar lotes' +error, code: 400, info: error });
+            res.status(400).json({ msg: 'Error listing batches: ' + error, code: 400, info: error });
         }
     }
 
     async getBatch(req, res) {
         try {
             const external = req.body.external;
-            var get = await batch.findOne({
+            const get = await batch.findOne({
                 where: { externalId: external },
-                attributes: ['code', 'expirationDate', 'expiryDate', 'externalId', 'status'],
+                attributes: ['code', 'expirationDate', 'expiryDate', 'externalId', 'status', 'availableQuantity'],
                 include: [
                     {
                         model: product,
                         as: 'product',
-                        attributes: [
-                            'name', 
-                            'category',
-                            'status'
-                        ],
+                        attributes: ['name', 'category', 'status'],
                     },
                 ],
             });
             if (get === null) {
-
                 get = {};
             }
-            res.status(200);
-            res.json({ msg: 'OK!', code: 200, info: get });
+            res.status(200).json({ msg: 'OK!', code: 200, info: get });
         } catch (error) {
-            res.status(500);
-            res.json({ msg: 'Error al obtener lote', code: 400, info: error });
+            res.status(500).json({ msg: 'Error getting batch', code: 500, info: error });
         }
     }
 
@@ -55,13 +47,14 @@ class BatchController {
             const batchData = {
                 code: data.code,
                 expirationDate: data.expirationDate,
-                expiryDate: data.expiryDate
+                expiryDate: data.expiryDate,
+                availableQuantity: data.quantity
             };
     
-            const batch = await models.batch.create(batchData, { transaction });
-            return { success: true, batch };
+            const newBatch = await models.batch.create(batchData, { transaction });
+            return { success: true, batch: newBatch };
         } catch (error) {
-            console.error('Error al crear lote:', error);
+            console.error('Error creating batch:', error);
             return { success: false, message: error.message };
         }
     }
@@ -75,9 +68,9 @@ class BatchController {
                 }
             });
 
-            if (!locationAux) {
+            if (!batchAux) {
                 return res.status(400).json({
-                    msg: "NO EXISTE EL REGISTRO DE LA UBICACIÓN",
+                    msg: "Batch not found",
                     code: 400
                 });
             }
@@ -92,19 +85,19 @@ class BatchController {
 
             if (!result) {
                 return res.status(400).json({
-                    msg: "NO SE HAN ACTUALIZADO LOS DATOS, INTENTE NUEVAMENTE",
+                    msg: "Failed to update batch, try again",
                     code: 400
                 });
             }
 
             return res.status(200).json({
-                msg: "SE HAN ACTUALIZADO LOS DATOS DEL LOTE CON ÉXITO",
+                msg: "Batch updated successfully",
                 code: 200
             });
 
         } catch (error) {
             return res.status(400).json({
-                msg: "Error en el servicio de actualizar lote" + error,
+                msg: "Error updating batch: " + error,
                 code: 400
             });
         }

@@ -3,6 +3,7 @@
 module.exports = (sequelize, DataTypes) => {
     const batch = sequelize.define('batch', {
         code: { type: DataTypes.STRING(50), unique: true },
+        availableQuantity: { type: DataTypes.INTEGER, defaultValue: 0 },
         expirationDate: { 
             type: DataTypes.DATE,
             validate: {
