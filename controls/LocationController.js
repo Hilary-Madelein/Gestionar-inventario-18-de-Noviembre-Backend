@@ -1,124 +1,85 @@
 'use strict';
-const { body, validationResult, check } = require('express-validator');
+const { validationResult } = require('express-validator');
 const models = require('../models');
 const location = models.location;
 const uuid = require('uuid');
 
 class LocationController {
 
-    async list(req, res) {
+    async list() {
         try {
-            var get = await location.findAll({
+            const get = await location.findAll({
                 attributes: ['block', 'roomNumber', 'parallel', 'level', 'externalId', 'status'],
             });
-            res.json({ msg: 'OK!', code: 200, info: get });
+            return { msg: 'OK!', code: 200, info: get, success: true };
         } catch (error) {
-            res.status(400)
-            res.json({ msg: 'Error al listar ubicaciones' +error, code: 400, info: error });
+            return { msg: 'Error al listar ubicaciones: ' + error, code: 400, success: false };
         }
     }
 
-    async getLocation(req, res) {
+    async getLocation(data) {
         try {
-            const external = req.body.external;
-            var get = await location.findOne({
+            const external = data.external;
+            let get = await location.findOne({
                 where: { externalId: external },
                 attributes: ['block', 'roomNumber', 'parallel', 'level', 'externalId', 'status'],
             });
             if (get === null) {
-
                 get = {};
             }
-            res.status(200);
-            res.json({ msg: 'OK!', code: 200, info: get });
+            return { msg: 'OK!', code: 200, info: get, success: true };
         } catch (error) {
-            res.status(500);
-            res.json({ msg: 'Error al obtener ubicación', code: 400, info: error });
+            return { msg: 'Error al obtener ubicación: ' + error, code: 400, success: false };
         }
     }
 
-    async save(req, res) {
+    async save(data, transaction) {
         try {
-            let errors = validationResult(req);
+            const errors = validationResult(data.req);
             if (!errors.isEmpty()) {
-                return res.status(400).json({ msg: "DATOS NO ENCONTRADOS", code: 400 });
+                return { success: false, message: "DATOS NO ENCONTRADOS", code: 400 };
             }
     
-            var data = {
-                block: req.body.block,
-                roomNumber: req.body.roomNumber, 
-                parallel: req.body.parallel,
-                level: req.body.level,
-                externalId: req.body.externalId,
-                status: req.body.status,
+            const locationData = {
+                block: data.req.body.block,
+                roomNumber: data.req.body.roomNumber,
+                parallel: data.req.body.parallel,
+                level: data.req.body.level,
+                externalId: data.req.body.externalId,
+                status: data.req.body.status,
             };
     
-            let transaction = await models.sequelize.transaction();
-            try {
-                await location.create(data, { transaction });
-                await transaction.commit();
-                res.json({
-                    msg: "SE HA REGISTRADO LA UBICACIÓN CON ÉXITO",
-                    code: 200
-                });
-            } catch (error) {
-                if (transaction) await transaction.rollback();
-                if (error.error && error.error[0].message) {
-                    res.json({ msg: error.error[0].message, code: 201 });
-                } else {
-                    res.json({ msg: error.message, code: 201 });
-                }
-            }
+            await location.create(locationData, { transaction });
+            return { success: true, message: "SE HA REGISTRADO LA UBICACIÓN CON ÉXITO", code: 200 };
         } catch (error) {
-            res.status(400).json({
-                msg: "Se produjo un error al registrar la ubicación: " + error,
-                code: 400
-            });
+            return { success: false, message: error.message, code: 500 };
         }
     }
 
-    async update(req, res) {
+    async update(data) {
         try {
             const locationAux = await location.findOne({
-                where: {
-                    externalId: req.body.externalId
-                }
+                where: { externalId: data.externalId }
             });
 
             if (!locationAux) {
-                return res.status(400).json({
-                    msg: "NO EXISTE EL REGISTRO DE LA UBICACIÓN",
-                    code: 400
-                });
+                return { success: false, message: "NO EXISTE EL REGISTRO DE LA UBICACIÓN", code: 400 };
             }
 
-            locationAux.block = req.body.block;
-            locationAux.roomNumber = req.body.roomNumber;
-            locationAux.parallel = req.body.parallel;
-            locationAux.level = req.body.level;
-            locationAux.status = req.body.status;
+            locationAux.block = data.block;
+            locationAux.roomNumber = data.roomNumber;
+            locationAux.parallel = data.parallel;
+            locationAux.level = data.level;
+            locationAux.status = data.status;
             locationAux.externalId = uuid.v4();
 
-            const result = await locationAux.save();
+            await locationAux.save();
 
-            if (!result) {
-                return res.status(400).json({
-                    msg: "NO SE HAN ACTUALIZADO LOS DATOS, INTENTE NUEVAMENTE",
-                    code: 400
-                });
-            }
-
-            return res.status(200).json({
-                msg: "SE HAN ACTUALIZADO LOS DATOS DE LA UBICACIÓN CON ÉXITO",
-                code: 200
-            });
-
+            return { success: true, message: "SE HAN ACTUALIZADO LOS DATOS DE LA UBICACIÓN CON ÉXITO", code: 200 };
         } catch (error) {
-            return res.status(400).json({
-                msg: "Error en el servicio de actualizar ubicación" + error,
-                code: 400
-            });
+            return { success: false, message: "Error en el servicio de actualizar ubicación: " + error, code: 500 };
         }
     }
 }
+
 module.exports = LocationController;

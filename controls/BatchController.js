@@ -7,24 +7,24 @@ const uuid = require('uuid');
 
 class BatchController {
 
-    async list(req, res) {
+    async list() {
         try {
             const get = await batch.findAll({
                 where: { status: 1 },
-                attributes: ['id', 'code', 'expirationDate', 'expiryDate', 'externalId', 'status', 'availableQuantity'],
+                attributes: ['id', 'code', 'expirationDate', 'expiryDate', 'externalId', 'status'],
             });
-            res.json({ msg: 'OK!', code: 200, info: get });
+            return { msg: 'OK!', code: 200, info: get };
         } catch (error) {
-            res.status(400).json({ msg: 'Error listing batches: ' + error, code: 400, info: error });
+            return { msg: 'Error al listar lotes: ' + error, code: 400, info: error };
         }
     }
 
-    async getBatch(req, res) {
+    async getBatch(req) {
         try {
             const external = req.body.external;
-            const get = await batch.findOne({
+            let get = await batch.findOne({
                 where: { externalId: external },
-                attributes: ['code', 'expirationDate', 'expiryDate', 'externalId', 'status', 'availableQuantity'],
+                attributes: ['code', 'expirationDate', 'expiryDate', 'externalId', 'status'],
                 include: [
                     {
                         model: product,
@@ -36,9 +36,9 @@ class BatchController {
             if (get === null) {
                 get = {};
             }
-            res.status(200).json({ msg: 'OK!', code: 200, info: get });
+            return { msg: 'OK!', code: 200, info: get };
         } catch (error) {
-            res.status(500).json({ msg: 'Error getting batch', code: 500, info: error });
+            return { msg: 'Error al obtener lote: ' + error, code: 400, info: error };
         }
     }
 
@@ -47,20 +47,18 @@ class BatchController {
             const batchData = {
                 code: data.code,
                 expirationDate: data.expirationDate,
-                expiryDate: data.expiryDate,
-                availableQuantity: data.quantity
+                expiryDate: data.expiryDate
             };
-    
+
             const newBatch = await models.batch.create(batchData, { transaction });
             return { success: true, batch: newBatch };
         } catch (error) {
-            console.error('Error creating batch:', error);
+            console.error('Error al crear lote:', error);
             return { success: false, message: error.message };
         }
     }
-    
 
-    async update(req, res) {
+    async update(req) {
         try {
             const batchAux = await batch.findOne({
                 where: {
@@ -69,10 +67,7 @@ class BatchController {
             });
 
             if (!batchAux) {
-                return res.status(400).json({
-                    msg: "Batch not found",
-                    code: 400
-                });
+                return { msg: "NO EXISTE EL REGISTRO DEL LOTE", code: 400 };
             }
 
             batchAux.code = req.body.code;
@@ -84,23 +79,15 @@ class BatchController {
             const result = await batchAux.save();
 
             if (!result) {
-                return res.status(400).json({
-                    msg: "Failed to update batch, try again",
-                    code: 400
-                });
+                return { msg: "NO SE HAN ACTUALIZADO LOS DATOS, INTENTE NUEVAMENTE", code: 400 };
             }
 
-            return res.status(200).json({
-                msg: "Batch updated successfully",
-                code: 200
-            });
+            return { msg: "SE HAN ACTUALIZADO LOS DATOS DEL LOTE CON ÉXITO", code: 200 };
 
         } catch (error) {
-            return res.status(400).json({
-                msg: "Error updating batch: " + error,
-                code: 400
-            });
+            return { msg: "Error en el servicio de actualizar lote: " + error, code: 400 };
         }
     }
 }
+
 module.exports = BatchController;

@@ -1,17 +1,15 @@
 'use strict';
-const { body, validationResult, check } = require('express-validator');
+const { validationResult } = require('express-validator');
 const models = require('../models');
 const warehouse = models.warehouse;
 const location = models.location;
-const fs = require('fs');
-const path = require('path');
 const uuid = require('uuid');
 
 class WarehouseController {
 
-    async list(req, res) {
+    async list() {
         try {
-            var get = await warehouse.findAll({
+            const get = await warehouse.findAll({
                 attributes: ['code', 'externalId', 'status'],
                 include: [
                     {
@@ -21,17 +19,16 @@ class WarehouseController {
                     },
                 ],
             });
-            res.json({ msg: 'OK!', code: 200, info: get });
+            return { msg: 'OK!', code: 200, info: get, success: true };
         } catch (error) {
-            res.status(400)
-            res.json({ msg: 'Error al listar bodegas' +error, code: 400, info: error });
+            return { msg: 'Error al listar bodegas: ' + error, code: 400, success: false };
         }
     }
 
-    async getWarehouse(req, res) {
+    async getWarehouse(data) {
         try {
-            const external = req.body.external;
-            var get = await warehouse.findOne({
+            const external = data.external;
+            const get = await warehouse.findOne({
                 where: { externalId: external },
                 attributes: ['code', 'externalId', 'status'],
                 include: [
@@ -43,115 +40,67 @@ class WarehouseController {
                 ],
             });
             if (get === null) {
-
-                get = {};
+                return { msg: 'BODEGA NO ENCONTRADA', code: 404, success: false };
             }
-            res.status(200);
-            res.json({ msg: 'OK!', code: 200, info: get });
+            return { msg: 'OK!', code: 200, info: get, success: true };
         } catch (error) {
-            res.status(500);
-            res.json({ msg: 'Error al obtener bodega', code: 400, info: error });
+            return { msg: 'Error al obtener bodega: ' + error, code: 400, success: false };
         }
     }
 
-    async save(req, res) {
+    async save(data, transaction) {
         try {
-            let errors = validationResult(req);
+            const errors = validationResult(data.req);
             if (!errors.isEmpty()) {
-                return res.status(400).json({ msg: "DATOS NO ENCONTRADOS", code: 400 });
+                return { success: false, message: "DATOS NO ENCONTRADOS", code: 400 };
             }
-    
-            var data = {
-                code: req.body.code,
-                location: {
-                    block: req.body.block,
-                    roomNumber: req.body.roomNumber,
-                    parallel: req.body.parallel,
-                    level: req.body.level,
 
+            const warehouseData = {
+                code: data.req.body.code,
+                location: {
+                    block: data.req.body.block,
+                    roomNumber: data.req.body.roomNumber,
+                    parallel: data.req.body.parallel,
+                    level: data.req.body.level,
                 },
             };
-    
-            let transaction = await models.sequelize.transaction();
-            try {
-                await warehouse.create(data, { include: [{ model: models.location, as: "location"}]}, { transaction });
-                await transaction.commit();
-                res.json({
-                    msg: "SE HA REGISTRADO LA BODEGA CON ÉXITO",
-                    code: 200
-                });
-            } catch (error) {
-                if (transaction) await transaction.rollback();
-                if (error.error && error.error[0].message) {
-                    res.json({ msg: error.error[0].message, code: 201 });
-                } else {
-                    res.json({ msg: error.message, code: 201 });
-                }
-            }
+
+            await warehouse.create(warehouseData, { include: [{ model: models.location, as: "location" }] }, { transaction });
+            return { success: true, message: "SE HA REGISTRADO LA BODEGA CON ÉXITO", code: 200 };
         } catch (error) {
-            res.status(400).json({
-                msg: "Se produjo un error al registrar la bodega: " + error,
-                code: 400
-            });
+            return { success: false, message: error.message, code: 500 };
         }
     }
 
-    async update(req, res) {
+    async update(data) {
         try {
-            const warehouseAux = await warehouse.findOne({
-                where: {
-                    externalId: req.body.external
-                }
-            });
-
-            console.log("wwww", warehouseAux.id);
-
-            const locationAux = await models.location.findOne({
-                where: {
-                    warehouseId: warehouseAux.id
-                }
-            });
-
-            console.log("ddddd", locationAux);
-
+            const warehouseAux = await warehouse.findOne({ where: { externalId: data.externalId } });
 
             if (!warehouseAux) {
-                return res.status(400).json({
-                    msg: "NO EXISTE EL REGISTRO DE LA BODEGA",
-                    code: 400
-                });
+                return { success: false, message: "NO EXISTE EL REGISTRO DE LA BODEGA", code: 400 };
             }
 
-            warehouseAux.code = req.body.code;
-            warehouseAux.status = req.body.status;
-            locationAux.block = req.body.block;
-            locationAux.roomNumber = req.body.roomNumber;
-            locationAux.parallel = req.body.parallel;
-            locationAux.level = req.body.level;
-            locationAux.status = req.body.status;
-            locationAux.externalId = uuid.v4();
+            const locationAux = await models.location.findOne({ where: { warehouseId: warehouseAux.id } });
+
+            warehouseAux.code = data.code;
+            warehouseAux.status = data.status;
             warehouseAux.externalId = uuid.v4();
 
-            const result = await warehouseAux.save();
+            locationAux.block = data.block;
+            locationAux.roomNumber = data.roomNumber;
+            locationAux.parallel = data.parallel;
+            locationAux.level = data.level;
+            locationAux.status = data.status;
+            locationAux.externalId = uuid.v4();
+
+            await warehouseAux.save();
             await locationAux.save();
-            if (!result) {
-                return res.status(400).json({
-                    msg: "NO SE HAN ACTUALIZADO LOS DATOS, INTENTE NUEVAMENTE",
-                    code: 400
-                });
-            }
 
-            return res.status(200).json({
-                msg: "SE HAN ACTUALIZADO LOS DATOS DE LA BODEGA CON ÉXITO",
-                code: 200
-            });
-
+            return { success: true, message: "SE HAN ACTUALIZADO LOS DATOS DE LA BODEGA CON ÉXITO", code: 200 };
         } catch (error) {
-            return res.status(400).json({
-                msg: "Error en el servicio de actualizar producto" + error,
-                code: 400
-            });
+            return { success: false, message: "Error en el servicio de actualizar bodega: " + error, code: 500 };
         }
     }
 }
+
 module.exports = WarehouseController;

@@ -1,295 +1,200 @@
 'use strict';
-const { body, validationResult, check } = require('express-validator');
+const { validationResult } = require('express-validator');
 const models = require('../models');
-const kardex = models.kardex;
 const itemKardex = models.itemKardex;
 const batch = models.batch;
 const BatchController = require('./BatchController');
-var batchController = new BatchController();
+const batchController = new BatchController();
 
-class itemKardexController {
+class ItemKardexController {
 
-    async getExistence(req, res) {
+    async getExistence() {
         try {
-            var get = await itemKardex.findOne({
+            const get = await itemKardex.findOne({
                 attributes: ['existence'],
                 order: [['createdAt', 'DESC']],  // Ordenar por fecha de creación de manera descendente
                 limit: 1  // Limita a solo el primer resultado, que será el más reciente
             });
     
             if (get === null) {
-                get = {};
+                return { msg: 'EXISTENCIA NO ENCONTRADA', code: 404, success: false, info: {} };
             }
     
-            console.log("ddd", get);
-            res.status(200);
-            res.json({ msg: 'OK!', code: 200, info: get });
+            return { msg: 'EXISTENCIA OBTENIDA CON ÉXITO', code: 200, success: true, info: get };
     
         } catch (error) {
-            res.status(500);
-            res.json({ msg: 'Error al obtener lote' + error, code: 400, info: error });
+            return { msg: 'Error al obtener existencia: ' + error, code: 400, success: false };
         }
     }
-    
 
-    async getQualityInputs(req, res) {
+    async getQualityInputs(data) {
         try {
-            const idBatch = req.body.idBatch;
-            var get = await itemKardex.findOne({
+            const idBatch = data.idBatch;
+            const get = await itemKardex.findOne({
                 where: { batchId: idBatch, movementType: "ENTRADA EXTERNA" },
                 attributes: ['quantity'],
             });
             if (get === null) {
-
-                get = {};
+                return { msg: 'CANTIDAD NO ENCONTRADA', code: 404, success: false, info: {} };
             }
-            console.log("ddd", get);
-            res.status(200);
-            res.json({ msg: 'OK!', code: 200, info: get });
-
+            return { msg: 'CANTIDAD OBTENIDA CON ÉXITO', code: 200, success: true, info: get };
         } catch (error) {
-            res.status(500);
-            res.json({ msg: 'Error al obtener lote' + error, code: 400, info: error });
+            return { msg: 'Error al obtener cantidad: ' + error, code: 400, success: false };
         }
     }
 
-    async getInputs(req, res) {
+    async getInputs(data) {
         try {
-            const idKardex = req.body.idKardex;
-            var get = await itemKardex.findAll({
+            const idKardex = data.idKardex;
+            const get = await itemKardex.findAll({
                 where: { kardexId: idKardex, movementType: "ENTRADA EXTERNA" },
                 attributes: ['date', 'detail', 'quantity', 'existence', 'status', 'movementType'],
                 include: [
                     {
                         model: batch,
                         as: 'batch',
-                        attributes: [
-                            'code',
-                            'expirationDate',
-                            'expiryDate'
-                        ],
+                        attributes: ['code', 'expirationDate', 'expiryDate'],
                     },
                 ],
             });
             if (get === null) {
-
-                get = {};
+                return { msg: 'ENTRADAS NO ENCONTRADAS', code: 404, success: false, info: {} };
             }
-            console.log("ddd", get);
-            res.status(200);
-            res.json({ msg: 'OK!', code: 200, info: get });
-
+            return { msg: 'ENTRADAS OBTENIDAS CON ÉXITO', code: 200, success: true, info: get };
         } catch (error) {
-            res.status(500);
-            res.json({ msg: 'Error al obtener lote' + error, code: 400, info: error });
+            return { msg: 'Error al obtener entradas: ' + error, code: 400, success: false };
         }
     }
 
-    async getOutputs(req, res) {
+    async getOutputs(data) {
         try {
-            const idKardex = req.body.idKardex;
-            var get = await itemKardex.findAll({
+            const idKardex = data.idKardex;
+            const get = await itemKardex.findAll({
                 where: { kardexId: idKardex, movementType: "SALIDA EXTERNA" },
                 attributes: ['date', 'detail', 'quantity', 'existence', 'status', 'movementType'],
                 include: [
                     {
                         model: batch,
                         as: 'batch',
-                        attributes: [
-                            'code',
-                            'expirationDate',
-                            'expiryDate'
-                        ],
+                        attributes: ['code', 'expirationDate', 'expiryDate'],
                     },
                 ],
             });
             if (get === null) {
-
-                get = {};
+                return { msg: 'SALIDAS NO ENCONTRADAS', code: 404, success: false, info: {} };
             }
-            console.log("ddd", get);
-            res.status(200);
-            res.json({ msg: 'OK!', code: 200, info: get });
-
+            return { msg: 'SALIDAS OBTENIDAS CON ÉXITO', code: 200, success: true, info: get };
         } catch (error) {
-            res.status(500);
-            res.json({ msg: 'Error al obtener lote' + error, code: 400, info: error });
+            return { msg: 'Error al obtener salidas: ' + error, code: 400, success: false };
         }
     }
 
-    async createItemKardexExternalInput(req, res) {
-        let errors = validationResult(req);
-        if (errors.isEmpty()) {
-            const kardexId = req.body.external_kardex;
-            if (kardexId) {
-                const kardexAux = await models.kardex.findOne({ where: { externalId: kardexId } });
+    async createItemKardexExternalInput(data, transaction) {
+        try {
+            const kardexAux = await models.kardex.findOne({ where: { externalId: data.external_kardex } });
 
-                if (req.body.quantity <= 0) {
-                    return res.status(400).json({
-                        msg: "LA CANTIDAD DEBE SER UN VALOR MAYOR A CERO",
-                        code: 400
-                    });
-                }
-
-                if (kardexAux) {
-                    const transaction = await models.sequelize.transaction();
-                    try {
-                        console.log("ssssss", req.body);
-                        const batchResult = await batchController.save({
-                            code: req.body.code,
-                            expirationDate: req.body.expirationDate,
-                            expiryDate: req.body.expiryDate,
-                            quantity: req.body.quantity
-                        }, transaction);
-
-                        if (!batchResult.success) {
-                            await transaction.rollback();
-                            return res.status(400).json({ msg: "Error al crear lote", error: batchResult.message });
-                        }
-
-                        const lastItemKardex = await models.itemKardex.findOne({
-                            where: { kardexId: kardexAux.id },
-                            order: [['createdAt', 'DESC']],
-                            transaction
-                        });
-
-                        const newExistence = lastItemKardex ? lastItemKardex.existence + req.body.quantity : req.body.quantity;
-
-                        const newItemKardexData = {
-                            kardexId: kardexAux.id,
-                            date: new Date(),
-                            detail: req.body.detail,
-                            quantity: req.body.quantity,
-                            existence: newExistence,
-                            movementType: req.body.movementType,
-                            status: true,
-                            originWarehouseId: "NOTA ENTREGA PROVEEDOR EXTERNO", // Fijo para entradas externas
-                            destinationWarehouseId: req.body.destinationWarehouseId,
-                            batchId: batchResult.batch.id
-                        };
-
-                        await models.itemKardex.create(newItemKardexData, { transaction });
-
-                        await transaction.commit();
-                        return res.json({
-                            msg: "TRANSACCIÓN REALIZADA CON ÉXITO",
-                            code: 200
-                        });
-
-                    } catch (error) {
-                        await transaction.rollback();
-                        return res.status(500).json({
-                            msg: "Error en la transacción",
-                            code: 500,
-                            error: error.message
-                        });
-                    }
-                } else {
-                    return res.status(404).json({ msg: "DATOS DE KARDEX NO ENCONTRADOS", code: 404 });
-                }
-            } else {
-                return res.status(400).json({ msg: "FALTAN DATOS DEL KARDEX EXTERNO", code: 400 });
+            if (data.quantity <= 0) {
+                return { success: false, message: "LA CANTIDAD DEBE SER UN VALOR MAYOR A CERO", code: 400 };
             }
-        } else {
-            return res.status(400).json({
-                msg: "DATOS FALTANTES O INCORRECTOS",
-                code: 400,
-                errors: errors.array()
-            });
-        }
-    }
 
-    async createItemKardexExternalOutput(req, res) {
-        let errors = validationResult(req);
-        if (errors.isEmpty()) {
-            const kardexId = req.body.external_kardex;
-            if (kardexId) {
-                const kardexAux = await models.kardex.findOne({ where: { externalId: kardexId } });
-    
-                if (req.body.quantity <= 0) {
-                    return res.status(400).json({
-                        msg: "LA CANTIDAD DEBE SER MAYOR QUE CERO",
-                        code: 400
-                    });
+            if (kardexAux) {
+                const batchResult = await batchController.save({
+                    code: data.code,
+                    expirationDate: data.expirationDate,
+                    expiryDate: data.expiryDate,
+                    quantity: data.quantity
+                }, transaction);
+
+                if (!batchResult.success) {
+                    return { success: false, message: "Error al crear lote: " + batchResult.message, code: 400 };
                 }
-    
-                if (kardexAux) {
-                    const transaction = await models.sequelize.transaction();
-                    try {
-                        const batchData = await models.batch.findByPk(req.body.batchId, { transaction });
-    
-                        if (!batchData) {
-                            await transaction.rollback();
-                            return res.status(404).json({ msg: "LOTE NO ENCONTRADO", code: 404 });
-                        }
-    
-                        if (batchData.availableQuantity < req.body.quantity) {
-                            await transaction.rollback();
-                            return res.status(400).json({
-                                msg: "STOCK INSUFICIENTE DISPONIBLE PARA EL LOTE",
-                                code: 400
-                            });
-                        }
-    
-                        const lastItemKardex = await models.itemKardex.findOne({
-                            where: { kardexId: kardexAux.id },
-                            order: [['createdAt', 'DESC']],
-                            transaction
-                        });
-    
-                        const newExistence = lastItemKardex ? lastItemKardex.existence - req.body.quantity : -req.body.quantity;
-    
-                        const newItemKardexData = {
-                            kardexId: kardexAux.id,
-                            date: new Date(),
-                            detail: req.body.detail,
-                            quantity: -req.body.quantity, // Negativo porque es una salida
-                            existence: newExistence,
-                            movementType: req.body.movementType,
-                            originWarehouseId: req.body.originWarehouseId,
-                            destinationWarehouseId: "SALIDA ESTUDIANTE", // Fijo para salidas externas
-                            batchId: req.body.batchId
-                        };
-    
-                        await models.itemKardex.create(newItemKardexData, { transaction });
-    
-                        batchData.availableQuantity -= req.body.quantity;
-                        if (batchData.availableQuantity <= 0) {
-                            batchData.status = 0; // Cambiar el estado del lote a inactivo si availableQuantity es 0 o menos
-                        }
-    
-                        await batchData.save({ transaction });
-    
-                        await transaction.commit();
-                        return res.json({
-                            msg: "TRANSACCIÓN REALIZADA CON ÉXITO",
-                            code: 200
-                        });
-    
-                    } catch (error) {
-                        await transaction.rollback();
-                        return res.status(500).json({
-                            msg: "ERROR EN LA TRANSACCIÓN",
-                            code: 500,
-                            error: error.message
-                        });
-                    }
-                } else {
-                    return res.status(404).json({ msg: "DATOS DE KARDEX NO ENCONTRADOS", code: 404 });
-                }
+
+                const lastItemKardex = await models.itemKardex.findOne({
+                    where: { kardexId: kardexAux.id },
+                    order: [['createdAt', 'DESC']],
+                    transaction
+                });
+
+                const newExistence = lastItemKardex ? lastItemKardex.existence + data.quantity : data.quantity;
+
+                const newItemKardexData = {
+                    kardexId: kardexAux.id,
+                    date: new Date(),
+                    detail: data.detail,
+                    quantity: data.quantity,
+                    existence: newExistence,
+                    movementType: data.movementType,
+                    status: true,
+                    originWarehouseId: "NOTA ENTREGA PROVEEDOR EXTERNO",
+                    destinationWarehouseId: data.destinationWarehouseId,
+                    batchId: batchResult.batch.id
+                };
+
+                await models.itemKardex.create(newItemKardexData, { transaction });
+                return { success: true, message: "KARDEX REGISTRADO CON ÉXITO", code: 200 };
             } else {
-                return res.status(400).json({ msg: "FALTAN DATOS DEL KARDEX EXTERNO", code: 400 });
+                return { success: false, message: "DATOS DE KARDEX NO ENCONTRADOS", code: 404 };
             }
-        } else {
-            return res.status(400).json({
-                msg: "DATOS FALTANTES O INCORRECTOS",
-                code: 400,
-                errors: errors.array()
-            });
+        } catch (error) {
+            return { success: false, message: "Error en la transacción: " + error.message, code: 500 };
         }
     }
-    
 
+    async createItemKardexExternalOutput(data, transaction) {
+        try {
+            const kardexAux = await models.kardex.findOne({ where: { externalId: data.external_kardex } });
+
+            if (data.quantity <= 0) {
+                return { success: false, message: "LA CANTIDAD DEBE SER MAYOR QUE CERO", code: 400 };
+            }
+
+            if (kardexAux) {
+                const batchData = await models.batch.findByPk(data.batchId, { transaction });
+
+                if (!batchData) {
+                    return { success: false, message: "LOTE NO ENCONTRADO", code: 404 };
+                }
+
+                if (batchData.availableQuantity < data.quantity) {
+                    return { success: false, message: "STOCK INSUFICIENTE DISPONIBLE PARA EL LOTE", code: 400 };
+                }
+
+                const lastItemKardex = await models.itemKardex.findOne({
+                    where: { kardexId: kardexAux.id },
+                    order: [['createdAt', 'DESC']],
+                    transaction
+                });
+
+                const newExistence = lastItemKardex ? lastItemKardex.existence - data.quantity : -data.quantity;
+
+                const newItemKardexData = {
+                    kardexId: kardexAux.id,
+                    date: new Date(),
+                    detail: data.detail,
+                    quantity: -data.quantity, // Negativo porque es una salida
+                    existence: newExistence,
+                    movementType: data.movementType,
+                    originWarehouseId: data.originWarehouseId,
+                    destinationWarehouseId: "SALIDA ESTUDIANTE",
+                    batchId: data.batchId
+                };
+
+                await models.itemKardex.create(newItemKardexData, { transaction });
+
+                batchData.availableQuantity -= data.quantity;
+                if (batchData.availableQuantity <= 0) {
+                    batchData.status = 0;
+                }
+
+                await batchData.save({ transaction });
+                return { success: true, message: "KARDEX REGISTRADO CON ÉXITO", code: 200 };
+            } else {
+                return { success: false, message: "DATOS DE KARDEX NO ENCONTRADOS", code: 404 };
+            }
+        } catch (error) {
+            return { success: false, message: "Error en la transacción: " + error.message, code: 500 };
+        }
+    }
 }
 
-module.exports = itemKardexController;
+module.exports = ItemKardexController;
