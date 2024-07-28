@@ -21,7 +21,7 @@ class BatchController {
 
     async getBatch(req) {
         try {
-            const external = req.body.external;
+            const external = req.body.externalId;
             let get = await batch.findOne({
                 where: { externalId: external },
                 attributes: ['code', 'expirationDate', 'expiryDate', 'externalId', 'status'],

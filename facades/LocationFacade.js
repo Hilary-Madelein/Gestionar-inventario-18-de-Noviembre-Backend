@@ -9,7 +9,7 @@ const LocationFacade = {
 
     getLocation: async (externalId) => {
         const locationController = new LocationController();
-        return await locationController.getLocation({ external: externalId });
+        return await locationController.getLocation({ externalId: externalId });
     },
 
     createLocation: async (locationData) => {

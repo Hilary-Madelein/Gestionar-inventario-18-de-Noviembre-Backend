@@ -10,7 +10,7 @@ const KardexFacade = {
 
     getKardex: async (externalId) => {
         const kardexController = new KardexController();
-        const response = await kardexController.getKardex({ body: { external: externalId } });
+        const response = await kardexController.getKardex({ body: { externalId: externalId } });
         return response;
     },
 

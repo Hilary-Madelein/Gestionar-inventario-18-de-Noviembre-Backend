@@ -203,8 +203,8 @@ router.get('/listar/bodegas', async (req, res) => {
   res.status(response.code).json(response);
 });
 
-router.get('/obtener/bodega', async (req, res) => {
-  const response = await WarehouseFacade.getWarehouse(req.query.externalId);
+router.post('/obtener/bodega', async (req, res) => {
+  const response = await WarehouseFacade.getWarehouse(req.body.externalId);
   res.status(response.code).json(response);
 });
 
@@ -228,8 +228,8 @@ router.get('/listar/kardex', async (req, res) => {
   res.status(response.code).json(response);
 });
 
-router.get('/obtener/kardex', async (req, res) => {
-  const response = await KardexFacade.getKardex(req.query.externalId);
+router.post('/obtener/kardex', async (req, res) => {
+  const response = await KardexFacade.getKardex(req.body.externalId);
   res.status(response.code).json(response);
 });
 
@@ -281,6 +281,11 @@ router.get('/obtener/existencia', async (req, res) => {
   res.status(response.code).json(response);
 });
 
+router.post('/obtener/porcentajes', async (req, res) => {
+  const response = await ItemKardexFacade.getPorcentajes(req.body.externalId);
+  res.status(response.code).json(response);
+});
+
 /** LOTE */
 router.get('/listar/lote', async (req, res) => {
   const response = await BatchFacade.listBatches();
@@ -288,7 +293,7 @@ router.get('/listar/lote', async (req, res) => {
 });
 
 router.get('/obtener/lote', async (req, res) => {
-  const response = await BatchFacade.getBatch(req.query.externalId);
+  const response = await BatchFacade.getBatch(req.body.externalId);
   res.status(response.code).json(response);
 });
 
@@ -306,7 +311,6 @@ router.post('/actualizar/lote', async (req, res) => {
   res.status(response.code).json(response);
 });
 
-/** UBICACION */
 /** UBICACIÓN */
 router.get('/listar/ubicaciones', async (req, res) => {
   const response = await LocationFacade.listLocations();
@@ -314,7 +318,7 @@ router.get('/listar/ubicaciones', async (req, res) => {
 });
 
 router.get('/obtener/ubicacion', async (req, res) => {
-  const response = await LocationFacade.getLocation(req.query.externalId);
+  const response = await LocationFacade.getLocation(req.body.externalId);
   res.status(response.code).json(response);
 });
 

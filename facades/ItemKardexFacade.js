@@ -64,7 +64,12 @@ const ItemKardexFacade = {
         const itemKardexController = new ItemKardexController();
         const response = await itemKardexController.getExistence();
         return response;
-    }
+    },
+
+    getPorcentajes: async (externalId) => {
+        const itemKardexController = new ItemKardexController();
+        return await itemKardexController.getPorcentajes({ external: externalId });
+    },
 };
 
 module.exports = ItemKardexFacade;

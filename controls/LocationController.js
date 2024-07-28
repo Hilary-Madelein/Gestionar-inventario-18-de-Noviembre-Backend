@@ -19,7 +19,7 @@ class LocationController {
 
     async getLocation(data) {
         try {
-            const external = data.external;
+            const external = data.externalId;
             let get = await location.findOne({
                 where: { externalId: external },
                 attributes: ['block', 'roomNumber', 'parallel', 'level', 'externalId', 'status'],

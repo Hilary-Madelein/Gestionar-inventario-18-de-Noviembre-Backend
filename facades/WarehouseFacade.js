@@ -9,7 +9,8 @@ const WarehouseFacade = {
 
     getWarehouse: async (externalId) => {
         const warehouseController = new WarehouseController();
-        return await warehouseController.getWarehouse({ external: externalId });
+        console.log("3333", externalId);
+        return await warehouseController.getWarehouse({ externalId: externalId });
     },
 
     createWarehouse: async (warehouseData) => {

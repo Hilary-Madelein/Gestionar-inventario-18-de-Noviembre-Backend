@@ -195,6 +195,65 @@ class ItemKardexController {
             return { success: false, message: "Error en la transacción: " + error.message, code: 500 };
         }
     }
+
+    async getPorcentajes() {
+        try {
+            // Obtener el registro más reciente para obtener la existencia actual
+            const latestEntry = await itemKardex.findOne({
+                attributes: ['existence', 'kardexId'],
+                order: [['createdAt', 'DESC']],
+                limit: 1
+            });
+    
+            if (!latestEntry) {
+                return { msg: 'EXISTENCIA NO ENCONTRADA', code: 404, success: false, info: {} };
+            }
+    
+            const stockActual = latestEntry.existence;
+            const kardexId = latestEntry.kardexId;
+    
+            // Obtener el maximumStock del kardex
+            const kardexData = await models.kardex.findOne({
+                where: { id: kardexId },
+                attributes: ['maximumStock']
+            });
+    
+            if (!kardexData) {
+                return { msg: 'KARDEX NO ENCONTRADO', code: 404, success: false, info: {} };
+            }
+    
+            const maxStock = kardexData.maximumStock;
+    
+            // Calcular las cantidades totales de entradas y salidas
+            const totalEntradas = await itemKardex.sum('quantity', {
+                where: { movementType: 'ENTRADA EXTERNA' }
+            });
+    
+            const totalSalidas = await itemKardex.sum('quantity', {
+                where: { movementType: 'SALIDA EXTERNA' }
+            });
+    
+            // Calcular los porcentajes
+            const porcentajeStock = Math.round((stockActual / maxStock) * 100,2);
+            const porcentajeEntradas = Math.round((totalEntradas / (totalEntradas + Math.abs(totalSalidas))) * 100,2);
+            const porcentajeSalidas = Math.round((Math.abs(totalSalidas) / (totalEntradas + Math.abs(totalSalidas))) * 100,2);
+    
+            return {
+                msg: 'PORCENTAJES OBTENIDOS CON ÉXITO',
+                code: 200,
+                success: true,
+                info: {
+                    porcentajeStock,
+                    porcentajeEntradas,
+                    porcentajeSalidas
+                }
+            };
+    
+        } catch (error) {
+            return { msg: 'Error al obtener porcentajes: ' + error, code: 400, success: false };
+        }
+    }
+    
 }
 
 module.exports = ItemKardexController;

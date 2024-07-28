@@ -21,7 +21,7 @@ class KardexController {
 
     async getKardex(req) {
         try {
-            const external = req.body.external;
+            const external = req.body.externalId;
             let get = await kardex.findOne({
                 where: { externalId: external },
                 attributes: ['code', 'maximumStock', 'minimumStock', 'externalId', 'status'],

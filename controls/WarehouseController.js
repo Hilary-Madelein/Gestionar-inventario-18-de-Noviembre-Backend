@@ -27,7 +27,7 @@ class WarehouseController {
 
     async getWarehouse(data) {
         try {
-            const external = data.external;
+            const external = data.externalId;
             const get = await warehouse.findOne({
                 where: { externalId: external },
                 attributes: ['code', 'externalId', 'status'],
