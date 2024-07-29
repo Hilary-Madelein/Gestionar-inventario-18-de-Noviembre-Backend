@@ -36,11 +36,11 @@ class KardexController {
                 ],
             });
             if (get === null) {
-                return { msg: 'PRODUCTO SIN KARDEX, REGISTRE UN KARDEX', code: 404, success: false };
+                return { msg: 'PRODUCTO SIN KARDEX, REGISTRE UN KARDEX', code: 404};
             }
             return { msg: 'OK!', code: 200, info: get, success: true };
         } catch (error) {
-            return { msg: 'Error al obtener producto del kardex: ' + error, code: 400, success: false };
+            return { msg: 'Error al obtener producto del kardex: ', code: 400, success: false };
         }
     }
 

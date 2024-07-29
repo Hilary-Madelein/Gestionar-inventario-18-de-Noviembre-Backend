@@ -237,7 +237,7 @@ class ItemKardexController {
             });
     
             if (!latestEntry) {
-                return { msg: 'EXISTENCIA NO ENCONTRADA', code: 404, success: false, info: {} };
+                return {info: {} };
             }
     
             const stockActual = latestEntry.existence;
