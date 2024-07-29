@@ -11,7 +11,7 @@ class BatchController {
         try {
             const get = await batch.findAll({
                 where: { status: 1 },
-                attributes: ['id', 'code', 'expirationDate', 'expiryDate', 'externalId', 'status'],
+                attributes: ['id', 'code', 'expirationDate', 'expiryDate', 'externalId', 'status', 'availableQuantity'],
             });
             return { msg: 'OK!', code: 200, info: get };
         } catch (error) {
@@ -25,13 +25,6 @@ class BatchController {
             let get = await batch.findOne({
                 where: { externalId: external },
                 attributes: ['code', 'expirationDate', 'expiryDate', 'externalId', 'status'],
-                include: [
-                    {
-                        model: product,
-                        as: 'product',
-                        attributes: ['name', 'category', 'status'],
-                    },
-                ],
             });
             if (get === null) {
                 get = {};
@@ -47,7 +40,8 @@ class BatchController {
             const batchData = {
                 code: data.code,
                 expirationDate: data.expirationDate,
-                expiryDate: data.expiryDate
+                expiryDate: data.expiryDate,
+                availableQuantity: data.quantity
             };
 
             const newBatch = await models.batch.create(batchData, { transaction });

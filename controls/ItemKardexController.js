@@ -33,6 +33,13 @@ class ItemKardexController {
             const get = await itemKardex.findOne({
                 where: { batchId: idBatch, movementType: "ENTRADA EXTERNA" },
                 attributes: ['quantity'],
+                include: [
+                    {
+                        model: batch,
+                        as: 'batch',
+                        attributes: ['availableQuantity'],
+                    },
+                ],
             });
             if (get === null) {
                 return { msg: 'CANTIDAD NO ENCONTRADA', code: 404, success: false, info: {} };
@@ -63,6 +70,29 @@ class ItemKardexController {
             return { msg: 'ENTRADAS OBTENIDAS CON ÉXITO', code: 200, success: true, info: get };
         } catch (error) {
             return { msg: 'Error al obtener entradas: ' + error, code: 400, success: false };
+        }
+    }
+
+    async getLotesMovimientos(data) {
+        try {
+            const idKardex = data.data;
+            const get = await itemKardex.findAll({
+                where: { kardexId: idKardex},
+                attributes: ['detail', 'status', 'movementType'],
+                include: [
+                    {
+                        model: batch,
+                        as: 'batch',
+                        attributes: ['code', 'expirationDate', 'expiryDate', 'availableQuantity', 'status'],
+                    },
+                ],
+            });
+            if (get === null) {
+                return { msg: 'MOVIMIENTOS NO ENCONTRADOS', code: 404, success: false, info: {} };
+            }
+            return { msg: 'MOVIMIENTOS OBTENIDOS CON ÉXITO', code: 200, success: true, info: get };
+        } catch (error) {
+            return { msg: 'Error al obtener salidas: ' + error, code: 400, success: false };
         }
     }
 
@@ -196,11 +226,12 @@ class ItemKardexController {
         }
     }
 
-    async getPorcentajes() {
+    async getPorcentajes(req) {
         try {
             // Obtener el registro más reciente para obtener la existencia actual
             const latestEntry = await itemKardex.findOne({
-                attributes: ['existence', 'kardexId'],
+                attributes: ['existence'],
+                where: { kardexId: req.data},
                 order: [['createdAt', 'DESC']],
                 limit: 1
             });
@@ -210,11 +241,10 @@ class ItemKardexController {
             }
     
             const stockActual = latestEntry.existence;
-            const kardexId = latestEntry.kardexId;
     
             // Obtener el maximumStock del kardex
             const kardexData = await models.kardex.findOne({
-                where: { id: kardexId },
+                where: { id: req.data},
                 attributes: ['maximumStock']
             });
     
@@ -226,17 +256,17 @@ class ItemKardexController {
     
             // Calcular las cantidades totales de entradas y salidas
             const totalEntradas = await itemKardex.sum('quantity', {
-                where: { movementType: 'ENTRADA EXTERNA' }
+                where: { movementType: 'ENTRADA EXTERNA', kardexId: req.data }
             });
     
             const totalSalidas = await itemKardex.sum('quantity', {
-                where: { movementType: 'SALIDA EXTERNA' }
+                where: { movementType: 'SALIDA EXTERNA',kardexId: req.data}
             });
     
             // Calcular los porcentajes
-            const porcentajeStock = Math.round((stockActual / maxStock) * 100,2);
-            const porcentajeEntradas = Math.round((totalEntradas / (totalEntradas + Math.abs(totalSalidas))) * 100,2);
-            const porcentajeSalidas = Math.round((Math.abs(totalSalidas) / (totalEntradas + Math.abs(totalSalidas))) * 100,2);
+            const porcentajeStock = Math.round((stockActual / maxStock) * 100);
+            const porcentajeEntradas = Math.round((totalEntradas / (totalEntradas + Math.abs(totalSalidas))) * 100);
+            const porcentajeSalidas = Math.round((Math.abs(totalSalidas) / (totalEntradas + Math.abs(totalSalidas))) * 100);
     
             return {
                 msg: 'PORCENTAJES OBTENIDOS CON ÉXITO',
@@ -253,6 +283,7 @@ class ItemKardexController {
             return { msg: 'Error al obtener porcentajes: ' + error, code: 400, success: false };
         }
     }
+    
     
 }
 

@@ -30,7 +30,7 @@ class WarehouseController {
             const external = data.externalId;
             const get = await warehouse.findOne({
                 where: { externalId: external },
-                attributes: ['code', 'externalId', 'status'],
+                attributes: ['id', 'code', 'externalId', 'status'],
                 include: [
                     {
                         model: location,

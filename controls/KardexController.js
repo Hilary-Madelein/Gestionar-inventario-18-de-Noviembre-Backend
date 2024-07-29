@@ -19,6 +19,31 @@ class KardexController {
         }
     }
 
+    async getKardexProduct(req) {
+        try {
+            const productId = req.body.productId;
+            const warehouseId = req.body.warehouseId;
+            
+            let get = await kardex.findOne({
+                where: { productId: productId, warehouseId: warehouseId },
+                attributes: ['id','code', 'maximumStock', 'minimumStock', 'externalId', 'status'],
+                include: [
+                    {
+                        model: product,
+                        as: 'product',
+                        attributes: ['name', 'category', 'status', 'photo'],
+                    },
+                ],
+            });
+            if (get === null) {
+                return { msg: 'PRODUCTO SIN KARDEX, REGISTRE UN KARDEX', code: 404, success: false };
+            }
+            return { msg: 'OK!', code: 200, info: get, success: true };
+        } catch (error) {
+            return { msg: 'Error al obtener producto del kardex: ' + error, code: 400, success: false };
+        }
+    }
+
     async getKardex(req) {
         try {
             const external = req.body.externalId;

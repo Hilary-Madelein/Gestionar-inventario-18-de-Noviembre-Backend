@@ -66,9 +66,14 @@ const ItemKardexFacade = {
         return response;
     },
 
-    getPorcentajes: async (externalId) => {
+    getPorcentajes: async (data) => {
         const itemKardexController = new ItemKardexController();
-        return await itemKardexController.getPorcentajes({ external: externalId });
+        return await itemKardexController.getPorcentajes({ data });
+    },
+
+    getMovimientosLotes: async (data) => {
+        const itemKardexController = new ItemKardexController();
+        return await itemKardexController.getLotesMovimientos({ data });
     },
 };
 

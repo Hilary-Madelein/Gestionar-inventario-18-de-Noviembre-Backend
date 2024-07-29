@@ -14,6 +14,12 @@ const KardexFacade = {
         return response;
     },
 
+    getKardexLote: async (body) => {
+        const kardexController = new KardexController();
+        const response = await kardexController.getKardexProduct({ body });
+        return response;
+    },
+
     createKardex: async (kardexData) => {
         const transaction = await sequelize.transaction();
         try {

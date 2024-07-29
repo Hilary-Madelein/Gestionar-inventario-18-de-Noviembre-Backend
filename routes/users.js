@@ -233,6 +233,11 @@ router.post('/obtener/kardex', async (req, res) => {
   res.status(response.code).json(response);
 });
 
+router.post('/obtener/kardex/lote', async (req, res) => {
+  const response = await KardexFacade.getKardexLote(req.body);
+  res.status(response.code).json(response);
+});
+
 router.post('/crear/kardex', async (req, res) => {
   try {
       const response = await KardexFacade.createKardex(req.body);
@@ -282,7 +287,12 @@ router.get('/obtener/existencia', async (req, res) => {
 });
 
 router.post('/obtener/porcentajes', async (req, res) => {
-  const response = await ItemKardexFacade.getPorcentajes(req.body.externalId);
+  const response = await ItemKardexFacade.getPorcentajes(req.body.kardexId);
+  res.status(response.code).json(response);
+});
+
+router.post('/obtener/lotes/movimientos', async (req, res) => {
+  const response = await ItemKardexFacade.getMovimientosLotes(req.body.kardexId);
   res.status(response.code).json(response);
 });
 

@@ -11,7 +11,7 @@ class ProductController {
     async list() {
         try {
             const products = await product.findAll({
-                attributes: ['name', 'photo', 'category', 'externalId', 'status'],
+                attributes: ['id', 'name', 'photo', 'category', 'externalId', 'status'],
             });
             return { msg: 'OK!', code: 200, info: products, success: true };
         } catch (error) {
